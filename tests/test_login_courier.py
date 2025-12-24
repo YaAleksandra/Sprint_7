@@ -1,48 +1,56 @@
 import allure
-from helpers.generator import (
-    generate_login,
-    generate_password,
-    generate_first_name
-)
-from helpers.endpoints import (
-    create_courier,
-    login_courier
-)
+from helpers.endpoints import create_courier, login_courier
+from test_data.courier_data import CourierData, ExpectedResponses
 
 
-@allure.title('Успешная авторизация курьера в системе')
-def test_courier_successful_login():
-    login = generate_login
-    password = generate_password
-    first_name = generate_first_name
-
-    create_courier({'login' : login, 'password' : password, 'first_name' : first_name})
-    response = login_courier({'login' : login, 'password' : password})
-
-    assert response.status_code == 200
-    assert 'id' in response.json()
-
-@allure.title('Ошибка авторизации при неверном пароле')
-def test_login_incorrect_pass_error():
-    login = generate_login()
-    password = generate_password()
-    first_name = generate_first_name()
-
-    create_courier({'login' : login, 'password' : password, 'first_name' : first_name})
-    response = login_courier({'login' : login, 'password' : 'qwerty'})
-
-    assert response.status_code == 404
-    assert 'Учетная запись не найдена' in response.text
-
-@allure.title('Ошибка авторизации при отсутствии логина')
-def test_login_without_login_error():
-    response = login_courier({'password' : '123'})
-
-    assert response.status_code == 400
-    assert 'Недостаточно данных для входа' in response.text
-
-@allure.title('Ошибка авторизации несуществующего пользователя')
-def test_login_nonexistent_user_error():
-    response = login_courier({'login' : 'qwerty', 'password' : '123456'})
-
-    assert response.status_code == 404
+class TestLoginCourier:
+    @allure.title('Успешная авторизация курьера в системе')
+    def test_courier_successful_login(self):
+        courier_data = CourierData.get_valid_courier_data()
+        
+        with allure.step('Создать курьера'):
+            create_courier(courier_data)
+        
+        with allure.step('Авторизоваться под созданным курьером'):
+            login_data = CourierData.get_login_data(
+                courier_data['login'], 
+                courier_data['password']
+            )
+            response = login_courier(login_data)
+        
+        assert response.status_code == ExpectedResponses.STATUS_OK
+        assert 'id' in response.json()
+    
+    @allure.title('Ошибка авторизации при неверном пароле')
+    def test_login_incorrect_pass_error(self):
+        courier_data = CourierData.get_valid_courier_data()
+        
+        with allure.step('Создать курьера'):
+            create_courier(courier_data)
+        
+        with allure.step('Попытаться авторизоваться с неверным паролем'):
+            login_data = CourierData.get_login_data(
+                courier_data['login'], 
+                CourierData.get_wrong_password()
+            )
+            response = login_courier(login_data)
+        
+        assert response.status_code == ExpectedResponses.STATUS_NOT_FOUND
+        assert ExpectedResponses.ACCOUNT_NOT_FOUND_MSG in response.text
+    
+    @allure.title('Ошибка авторизации при отсутствии логина')
+    def test_login_without_login_error(self):
+        with allure.step('Попытка авторизоваться без логина'):
+            payload = CourierData.get_login_without_credentials()
+            response = login_courier(payload)
+        
+        assert response.status_code == ExpectedResponses.STATUS_BAD_REQUEST
+        assert ExpectedResponses.LOGIN_INSUFFICIENT_DATA_MSG in response.text
+    
+    @allure.title('Ошибка авторизации несуществующего пользователя')
+    def test_login_nonexistent_user_error(self):
+        with allure.step('Попытка авторизоваться несуществующим пользователем'):
+            payload = CourierData.get_nonexistent_user()
+            response = login_courier(payload)
+        
+        assert response.status_code == ExpectedResponses.STATUS_NOT_FOUND
