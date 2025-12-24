@@ -28,12 +28,15 @@ Sprint_7/
 ├── Helpers/                          
 │   ├── endpoints.py 
 │   └── generator.py        
-│
+│── test_data/
+│    ├── __init__.py
+│    ├── courier_data.py
+│    └── order_data.py      
 ├── tests/                        
 │   ├── test_create_courier.py  
 │   ├── test_login_courier.py     
 │   ├── test_order_create.py    
-│   ├── test_order_list.py        
+│   ├── test_order_list.py
 │
 ├── Urls.py                         
 ├── .gitignore    
