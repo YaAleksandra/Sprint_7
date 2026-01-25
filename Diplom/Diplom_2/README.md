@@ -1,4 +1,4 @@
-Diplom_2
+Diplom_2 API Автотесты
 
 # API Автотесты для сервиса Stellar Burgers
 
